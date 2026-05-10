@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f7f3;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@layer components {
+  .app-bg {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(247, 247, 243, 0.95)),
+      repeating-linear-gradient(90deg, rgba(15, 118, 110, 0.06) 0 1px, transparent 1px 72px),
+      repeating-linear-gradient(0deg, rgba(194, 65, 12, 0.05) 0 1px, transparent 1px 72px),
+      #f7f7f3;
+  }
+
+  .panel {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    padding: 1rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border-radius: 6px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .btn-primary {
+    background: #0f766e;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #115e59;
+  }
+
+  .btn-secondary {
+    border: 1px solid #cbd5e1;
+    background: white;
+    color: #334155;
+  }
+
+  .btn-secondary:hover {
+    border-color: #94a3b8;
+    color: #0f172a;
+  }
+
+  .btn-danger {
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #be123c;
+  }
+
+  .btn-danger:hover {
+    border-color: #fb7185;
+  }
+
+  .input,
+  .textarea,
+  .file-input {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: white;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.9rem;
+    color: #0f172a;
+    outline: none;
+  }
+
+  .input:focus,
+  .textarea:focus,
+  .file-input:focus {
+    border-color: #0f766e;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+  }
+
+  .textarea {
+    resize: vertical;
+  }
+
+  .label {
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .label-row {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .eyebrow {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #0f766e;
+  }
+
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    background: #ecfdf5;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #047857;
+  }
+
+  .notice {
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    background: #fffbeb;
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+    color: #92400e;
+  }
+
+  .status {
+    border-radius: 999px;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: capitalize;
+  }
+
+  .status-submitted,
+  .status-under_review {
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+
+  .status-needs_more_info {
+    background: #fffbeb;
+    color: #b45309;
+  }
+
+  .status-approved {
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  .status-rejected,
+  .status-revoked {
+    background: #fff1f2;
+    color: #be123c;
+  }
+}

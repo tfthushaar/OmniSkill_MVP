@@ -1,0 +1,17 @@
+{
+  "name": "omniskill-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "lint:web": "npm --prefix apps/web run lint",
+    "dev:api": "uvicorn app.main:app --reload --app-dir apps/api",
+    "test:api": "pytest apps/api/tests"
+  }
+}
+
