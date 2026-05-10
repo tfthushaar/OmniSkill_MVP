@@ -180,6 +180,31 @@ class ConnectedAccountRead(ApiModel):
     last_synced_at: Optional[datetime]
 
 
+# ── Connector request bodies ──────────────────────────────────────────────────
+
+class ConnectFaceitRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+
+
+class ConnectSteamRequest(BaseModel):
+    steam_id: str = Field(min_length=1, description="SteamID64 (17 digits) or steam profile URL")
+
+
+class ConnectRiotRequest(BaseModel):
+    game_name: str = Field(min_length=1, max_length=64)
+    tag_line: str = Field(min_length=1, max_length=16)
+
+
+class ConnectDiscordManualRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+    discord_id: str = ""
+
+
+class ConnectionWithStats(ConnectedAccountRead):
+    """ConnectedAccount enriched with its latest raw snapshot summary."""
+    stats: dict[str, Any] = {}
+
+
 class SyncJobRead(ApiModel):
     id: int
     provider: str

@@ -97,6 +97,18 @@ export type Passport = {
   career_tracks: CareerTrack[];
 };
 
+export type ConnectedAccount = {
+  id: number;
+  user_id: number;
+  provider: "faceit" | "steam" | "riot" | "discord";
+  provider_account_id: string;
+  display_name: string;
+  scopes: string[];
+  connected_at: string;
+  last_synced_at: string | null;
+  stats: Record<string, string | number | object>;
+};
+
 export type MeResponse = {
   user: User;
   profile: Profile | null;

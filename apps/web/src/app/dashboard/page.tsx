@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Check, ChevronRight, ClipboardCopy, Download, ExternalLink, FilePlus2, LogOut, Send, ShieldCheck } from "lucide-react";
+import { BadgeCheck, Check, ChevronRight, ClipboardCopy, Download, ExternalLink, FilePlus2, Link2, Link2Off, LogOut, RefreshCw, Send, ShieldCheck } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { apiFetch, downloadPdf } from "@/lib/api";
-import { CareerTrack, EvidenceClaim, EvidenceKind, MeResponse, Passport, Profile } from "@/lib/types";
+import { CareerTrack, ConnectedAccount, EvidenceClaim, EvidenceKind, MeResponse, Passport, Profile } from "@/lib/types";
 
-type Tab = "profile" | "evidence" | "passport";
+type Tab = "profile" | "evidence" | "passport" | "connections";
 
 const evidenceLabels: Record<EvidenceKind, string> = {
   discord_admin: "Discord Admin",
@@ -145,6 +145,7 @@ export default function DashboardPage() {
   const [profileForm, setProfileForm] = useState<ProfileForm | null>(null);
   const [evidenceForm, setEvidenceForm] = useState<EvidenceForm>(emptyEvidence);
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [connections, setConnections] = useState<ConnectedAccount[]>([]);
   const [msg, setMsg] = useState({ text: "", kind: "notice" as "notice" | "notice-success" | "notice-error" });
   const [loading, setLoading] = useState(true);
   const [chartsReady, setChartsReady] = useState(false);
@@ -163,6 +164,8 @@ export default function DashboardPage() {
       setProfileForm(profileToForm(current.profile, current.user.email));
       try { setPassport(await apiFetch<Passport>("/passport/me", { token })); }
       catch { setPassport(null); }
+      try { setConnections(await apiFetch<ConnectedAccount[]>("/connections", { token })); }
+      catch { setConnections([]); }
     } catch (err) {
       setMsg({ text: err instanceof Error ? err.message : "Could not load dashboard", kind: "notice-error" });
     } finally { setLoading(false); }
@@ -275,6 +278,7 @@ export default function DashboardPage() {
               { id: "profile" as Tab, label: "// Profile" },
               { id: "evidence" as Tab, label: `// Evidence${claims.length ? ` (${claims.length})` : ""}` },
               { id: "passport" as Tab, label: `// Passport${passport?.skill_cards.length ? ` (${passport.skill_cards.length})` : ""}` },
+              { id: "connections" as Tab, label: `// Connections${connections.length ? ` (${connections.length})` : ""}` },
             ]).map(({ id, label }) => (
               <button key={id} type="button" onClick={() => setTab(id)} className={`tab-btn ${tab === id ? "tab-btn-active" : ""}`}>
                 {label}
@@ -578,7 +582,318 @@ export default function DashboardPage() {
             )}
           </div>
         )}
+
+        {/* ══════════════ CONNECTIONS TAB ══════════════ */}
+        {tab === "connections" && (
+          <ConnectionsTab token={token!} connections={connections} onRefresh={load} setMsg={setMsg} />
+        )}
       </div>
     </main>
+  );
+}
+
+/* ─────────────────────────── Connections Tab ─────────────────────────── */
+
+type Provider = { id: string; label: string; icon: string; color: string; accentClass: string; description: string };
+
+const PROVIDERS: Provider[] = [
+  { id: "faceit", label: "FACEIT", icon: "⚡", color: "#ff5500", accentClass: "tag-orange", description: "Competitive CS2/CSGO stats, ELO, win rate, and K/D ratio." },
+  { id: "steam", label: "Steam", icon: "🎮", color: "#1b2838", accentClass: "tag-cyan", description: "Profile, owned games count, and play history." },
+  { id: "riot", label: "Riot Games", icon: "⚔️", color: "#c89b3c", accentClass: "tag-orange", description: "League of Legends / Valorant account via Riot ID." },
+  { id: "discord", label: "Discord", icon: "💬", color: "#5865f2", accentClass: "tag-cyan", description: "Community identity, server memberships, and moderation roles." },
+];
+
+const ML2 = ({ children }: { children: React.ReactNode }) => (
+  <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--text-dim)", letterSpacing: "2px", textTransform: "uppercase" as const }}>
+    {children}
+  </span>
+);
+
+function StatRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+      <ML2>{label}</ML2>
+      <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "13px", color: "var(--accent)", fontWeight: 700 }}>{String(value)}</span>
+    </div>
+  );
+}
+
+function FaceitStats({ stats }: { stats: Record<string, unknown> }) {
+  return (
+    <div>
+      {stats.skill_level !== undefined && <StatRow label="Skill Level" value={`Lv ${stats.skill_level}`} />}
+      {stats.faceit_elo !== undefined && <StatRow label="FACEIT ELO" value={String(stats.faceit_elo)} />}
+      {stats.matches !== undefined && <StatRow label="Matches" value={String(stats.matches)} />}
+      {stats.win_rate !== undefined && <StatRow label="Win Rate" value={`${stats.win_rate}%`} />}
+      {stats.kd_ratio !== undefined && <StatRow label="K/D Ratio" value={String(stats.kd_ratio)} />}
+      {stats.game && <StatRow label="Primary Game" value={String(stats.game).toUpperCase()} />}
+    </div>
+  );
+}
+
+function SteamStats({ stats }: { stats: Record<string, unknown> }) {
+  return (
+    <div>
+      {stats.game_count !== undefined && <StatRow label="Games Owned" value={String(stats.game_count)} />}
+      {stats.visibility && <StatRow label="Profile" value={String(stats.visibility)} />}
+      {stats.country && <StatRow label="Country" value={String(stats.country)} />}
+    </div>
+  );
+}
+
+function RiotStats({ stats }: { stats: Record<string, unknown> }) {
+  return (
+    <div>
+      {stats.riot_id && <StatRow label="Riot ID" value={String(stats.riot_id)} />}
+      <div style={{ marginTop: "8px" }}>
+        <a
+          href={String(stats.profile_url || "")}
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--accent)", letterSpacing: "1px", textDecoration: "underline" }}
+        >
+          View on OP.GG →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function DiscordStats({ stats }: { stats: Record<string, unknown> }) {
+  return (
+    <div>
+      {stats.username && <StatRow label="Username" value={String(stats.username)} />}
+      {stats.guild_count !== undefined && <StatRow label="Servers" value={String(stats.guild_count)} />}
+      {stats.linked_via && <StatRow label="Linked via" value={String(stats.linked_via)} />}
+    </div>
+  );
+}
+
+function ConnectionsTab({
+  token,
+  connections,
+  onRefresh,
+  setMsg,
+}: {
+  token: string;
+  connections: ConnectedAccount[];
+  onRefresh: () => Promise<void>;
+  setMsg: (m: { text: string; kind: "notice" | "notice-success" | "notice-error" }) => void;
+}) {
+  const [inputs, setInputs] = useState<Record<string, Record<string, string>>>({});
+  const [syncing, setSyncing] = useState<string | null>(null);
+
+  const connected = (id: string) => connections.find((c) => c.provider === id);
+
+  function inp(provider: string, field: string) {
+    return inputs[provider]?.[field] ?? "";
+  }
+  function setInp(provider: string, field: string, value: string) {
+    setInputs((prev) => ({ ...prev, [provider]: { ...(prev[provider] ?? {}), [field]: value } }));
+  }
+
+  async function connect(provider: string) {
+    setMsg({ text: "", kind: "notice" });
+    try {
+      if (provider === "faceit") {
+        const username = inp("faceit", "username");
+        if (!username) return;
+        await apiFetch("/connect/faceit", { method: "POST", token, body: { username } });
+      } else if (provider === "steam") {
+        const steam_id = inp("steam", "steam_id");
+        if (!steam_id) return;
+        await apiFetch("/connect/steam", { method: "POST", token, body: { steam_id } });
+      } else if (provider === "riot") {
+        const raw = inp("riot", "riot_id");
+        if (!raw) return;
+        const [game_name, tag_line] = raw.includes("#") ? raw.split("#") : [raw, "EUW"];
+        await apiFetch("/connect/riot", { method: "POST", token, body: { game_name, tag_line } });
+      } else if (provider === "discord") {
+        const res = await apiFetch<{ auth_url: string }>("/connect/discord/start", { token });
+        window.open(res.auth_url, "_blank", "width=500,height=700");
+        setMsg({ text: "Authorize in the opened window. Come back and click Sync after completing.", kind: "notice" });
+        return;
+      }
+      setMsg({ text: `${provider.toUpperCase()} connected.`, kind: "notice-success" });
+      await onRefresh();
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : "Connection failed";
+      if (errMsg.includes("API key is not configured")) {
+        setMsg({ text: `${errMsg}`, kind: "notice-error" });
+      } else {
+        setMsg({ text: errMsg, kind: "notice-error" });
+      }
+    }
+  }
+
+  async function disconnect(provider: string) {
+    try {
+      await apiFetch(`/connections/${provider}`, { method: "DELETE", token });
+      setMsg({ text: `${provider.toUpperCase()} disconnected.`, kind: "notice-success" });
+      await onRefresh();
+    } catch (e) {
+      setMsg({ text: e instanceof Error ? e.message : "Disconnect failed", kind: "notice-error" });
+    }
+  }
+
+  async function sync(provider: string) {
+    setSyncing(provider);
+    try {
+      await apiFetch(`/sync/${provider}`, { method: "POST", token });
+      setMsg({ text: `${provider.toUpperCase()} data refreshed.`, kind: "notice-success" });
+      await onRefresh();
+    } catch (e) {
+      setMsg({ text: e instanceof Error ? e.message : "Sync failed", kind: "notice-error" });
+    } finally {
+      setSyncing(null);
+    }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div>
+        <p className="eyebrow" style={{ marginBottom: "6px" }}>// Platform connections</p>
+        <h2 className="section-title">Connect your gaming accounts</h2>
+        <p style={{ color: "var(--text-dim)", fontSize: "15px", marginTop: "8px" }}>
+          Connected accounts feed verified data into your evidence cards and career signals. API keys must be configured by the platform admin.
+        </p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", background: "var(--border)" }}>
+        {PROVIDERS.map((p) => {
+          const acc = connected(p.id);
+          const isSyncing = syncing === p.id;
+
+          return (
+            <div key={p.id} className="panel" style={{ display: "flex", flexDirection: "column", gap: "16px", position: "relative" }}>
+              {/* Top accent */}
+              <div style={{ height: "2px", background: `linear-gradient(90deg, ${p.color}, transparent)`, marginBottom: "4px" }} />
+
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "22px" }}>{p.icon}</span>
+                  <div>
+                    <p style={{ fontFamily: "var(--font-head, Barlow Condensed, sans-serif)", fontSize: "20px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "2px", color: "var(--text-bright)" }}>{p.label}</p>
+                    {acc && (
+                      <p style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--accent3)", letterSpacing: "1px" }}>
+                        // {acc.display_name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {acc
+                  ? <span className="chip chip-green">Connected</span>
+                  : <span className="chip chip-red">Not linked</span>
+                }
+              </div>
+
+              {/* Description */}
+              <p style={{ fontSize: "14px", color: "var(--text-dim)", lineHeight: 1.6 }}>{p.description}</p>
+
+              {/* Stats (when connected) */}
+              {acc && Object.keys(acc.stats).length > 0 && (
+                <div>
+                  {p.id === "faceit" && <FaceitStats stats={acc.stats as Record<string, unknown>} />}
+                  {p.id === "steam" && <SteamStats stats={acc.stats as Record<string, unknown>} />}
+                  {p.id === "riot" && <RiotStats stats={acc.stats as Record<string, unknown>} />}
+                  {p.id === "discord" && <DiscordStats stats={acc.stats as Record<string, unknown>} />}
+                  {acc.last_synced_at && (
+                    <p style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "9px", color: "var(--text-dim)", marginTop: "10px" }}>
+                      Last synced: {new Date(acc.last_synced_at).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Connect form (when not connected) */}
+              {!acc && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {p.id === "faceit" && (
+                    <input className="input" placeholder="Your FACEIT username" value={inp("faceit", "username")} onChange={(e) => setInp("faceit", "username", e.target.value)} />
+                  )}
+                  {p.id === "steam" && (
+                    <input className="input" placeholder="SteamID64 (17-digit number)" value={inp("steam", "steam_id")} onChange={(e) => setInp("steam", "steam_id", e.target.value)} />
+                  )}
+                  {p.id === "riot" && (
+                    <input className="input" placeholder="Username#Tag (e.g. Player#EUW)" value={inp("riot", "riot_id")} onChange={(e) => setInp("riot", "riot_id", e.target.value)} />
+                  )}
+                  {p.id === "discord" && (
+                    <p style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "11px", color: "var(--text-dim)", lineHeight: 1.6 }}>
+                      // Click Connect to open Discord OAuth in a new window.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: "8px", marginTop: "auto" }}>
+                {acc ? (
+                  <>
+                    <button
+                      className="btn-secondary"
+                      type="button"
+                      onClick={() => sync(p.id)}
+                      disabled={isSyncing}
+                      style={{ fontSize: "11px" }}
+                    >
+                      <RefreshCw size={12} style={{ animation: isSyncing ? "spin 1s linear infinite" : undefined }} />
+                      {isSyncing ? "Syncing..." : "Sync"}
+                    </button>
+                    <button
+                      className="btn-danger"
+                      type="button"
+                      onClick={() => disconnect(p.id)}
+                      style={{ fontSize: "11px" }}
+                    >
+                      <Link2Off size={12} /> Disconnect
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="btn-primary"
+                    type="button"
+                    onClick={() => connect(p.id)}
+                    style={{ fontSize: "11px" }}
+                  >
+                    <Link2 size={12} /> Connect {p.label}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* API key setup notice */}
+      <div className="panel panel-red" style={{ padding: "20px 24px" }}>
+        <p className="eyebrow" style={{ marginBottom: "10px" }}>// Setup required</p>
+        <p style={{ fontSize: "14px", color: "var(--text)", lineHeight: 1.7 }}>
+          Each platform requires an API key set by the admin in environment variables.
+          Get them free from the developer portals below:
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "14px" }}>
+          {[
+            { label: "FACEIT_API_KEY", url: "https://developers.faceit.com", note: "Free developer account" },
+            { label: "STEAM_API_KEY", url: "https://steamcommunity.com/dev/apikey", note: "Free Steam account" },
+            { label: "RIOT_API_KEY", url: "https://developer.riotgames.com", note: "Expires every 24 h" },
+            { label: "DISCORD_CLIENT_ID + SECRET", url: "https://discord.com/developers", note: "Free Discord app" },
+          ].map(({ label, url, note }) => (
+            <a
+              key={label}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: "flex", flexDirection: "column", gap: "2px", padding: "10px", border: "1px solid var(--border)", textDecoration: "none", transition: "border-color 150ms" }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+            >
+              <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "11px", color: "var(--accent3)", letterSpacing: "1px" }}>{label}</span>
+              <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "9px", color: "var(--text-dim)" }}>{note}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
