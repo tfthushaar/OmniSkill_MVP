@@ -247,7 +247,7 @@ export default function DashboardPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <span className="logo-text" style={{ fontSize: "16px" }}>OMNI<span className="logo-dash">-</span>SKILL</span>
             <span style={{ color: "var(--border)" }}>|</span>
-            <ML>Passport Workspace</ML>
+            <ML>Career Graph</ML>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             {approvedCount > 0 && <span className="chip chip-green">{approvedCount} verified</span>}

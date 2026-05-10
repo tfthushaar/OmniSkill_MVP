@@ -8,12 +8,18 @@ services:
     plan: free
     envVars:
       - key: DATABASE_URL
-        sync: false
+        sync: false          # Set manually: your Supabase connection string
       - key: SECRET_KEY
-        generateValue: true
+        generateValue: true  # Render auto-generates a secure random value
       - key: ADMIN_INVITE_CODE
-        sync: false
+        sync: false          # Set manually: your chosen invite code
+      - key: SEED_ADMIN_EMAIL
+        sync: false          # Set manually: admin@yourdomain.com
+      - key: SEED_ADMIN_PASSWORD
+        sync: false          # Set manually: strong password — admin created on first boot
       - key: FRONTEND_URL
-        sync: false
+        sync: false          # Set manually: https://your-app.vercel.app
+      - key: CORS_ORIGINS
+        sync: false          # Set manually: https://your-app.vercel.app
       - key: UPLOAD_DIR
-        value: uploads
+        value: /tmp/uploads  # Writable on Render; resets on restart (acceptable for now)

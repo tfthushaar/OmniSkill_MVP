@@ -26,7 +26,12 @@ const barlowCondensed = Barlow_Condensed({
 
 export const metadata: Metadata = {
   title: "OMNI-SKILL // Career Graph",
-  description: "A data-backed career evidence platform. Turn gaming, esports, and community activity into verified professional proof.",
+  description: "Turn your gaming, esports, and community history into verified career proof. Evidence cards, resume bullets, and a shareable professional passport.",
+  openGraph: {
+    title: "Omni-Skill Career Graph",
+    description: "Verified career evidence for digital-native students and esports participants.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
