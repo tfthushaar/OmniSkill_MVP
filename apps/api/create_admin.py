@@ -33,13 +33,13 @@ def create_admin(email: str, password: str) -> None:
         existing = session.exec(select(User).where(User.email == email.lower())).first()
         if existing:
             if existing.role == UserRole.admin:
-                print(f"✓ Already admin: {email}")
+                print(f"[OK] Already admin: {email}")
                 return
             existing.role = UserRole.admin
             existing.password_hash = hash_password(password)
             session.add(existing)
             session.commit()
-            print(f"✓ Promoted to admin: {email}")
+            print(f"[OK] Promoted to admin: {email}")
         else:
             user = User(
                 email=email.lower(),
@@ -49,7 +49,7 @@ def create_admin(email: str, password: str) -> None:
             session.add(user)
             session.commit()
             session.refresh(user)
-            print(f"✓ Admin created: {email}  (id={user.id})")
+            print(f"[OK] Admin created: {email}  (id={user.id})")
 
 
 if __name__ == "__main__":
