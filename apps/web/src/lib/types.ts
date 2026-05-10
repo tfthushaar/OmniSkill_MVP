@@ -82,6 +82,11 @@ export type ResumeBullet = {
   created_at: string;
 };
 
+export type CareerTrack = {
+  track: string;
+  fit: "strong" | "moderate";
+};
+
 export type Passport = {
   profile: Profile;
   evidence: EvidenceClaim[];
@@ -89,6 +94,7 @@ export type Passport = {
   resume_bullets: ResumeBullet[];
   verification_breakdown: Record<string, number>;
   career_summary: string;
+  career_tracks: CareerTrack[];
 };
 
 export type MeResponse = {

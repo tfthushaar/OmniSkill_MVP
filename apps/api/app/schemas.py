@@ -141,6 +141,11 @@ class ResumeBulletRead(ApiModel):
     created_at: datetime
 
 
+class CareerTrack(BaseModel):
+    track: str
+    fit: str  # "strong" | "moderate"
+
+
 class PassportResponse(BaseModel):
     profile: ProfileRead
     evidence: list[EvidenceRead]
@@ -148,6 +153,7 @@ class PassportResponse(BaseModel):
     resume_bullets: list[ResumeBulletRead]
     verification_breakdown: dict[str, int]
     career_summary: str
+    career_tracks: list[CareerTrack] = []
 
 
 class UploadUrlResponse(BaseModel):

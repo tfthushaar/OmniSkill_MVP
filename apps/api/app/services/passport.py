@@ -17,6 +17,34 @@ SIGNAL_MAP = {
     EvidenceKind.guild_leader: "Digital Team Leadership",
 }
 
+CAREER_TRACK_MAP: dict[EvidenceKind, list[dict[str, str]]] = {
+    EvidenceKind.discord_admin: [
+        {"track": "Community Manager", "fit": "strong"},
+        {"track": "Trust & Safety Analyst", "fit": "strong"},
+        {"track": "Platform Operations Coordinator", "fit": "moderate"},
+    ],
+    EvidenceKind.esports_player: [
+        {"track": "Esports Analyst", "fit": "strong"},
+        {"track": "Competitive Programme Coordinator", "fit": "strong"},
+        {"track": "Gaming Content Operations", "fit": "moderate"},
+    ],
+    EvidenceKind.tournament_organizer: [
+        {"track": "Esports Event Producer", "fit": "strong"},
+        {"track": "Operations Manager", "fit": "strong"},
+        {"track": "Project Coordinator", "fit": "moderate"},
+    ],
+    EvidenceKind.club_member: [
+        {"track": "Campus Relations Coordinator", "fit": "strong"},
+        {"track": "Esports Club Operations", "fit": "moderate"},
+        {"track": "Student Community Manager", "fit": "moderate"},
+    ],
+    EvidenceKind.guild_leader: [
+        {"track": "Team Lead", "fit": "strong"},
+        {"track": "Digital Operations Coordinator", "fit": "strong"},
+        {"track": "Community Strategy Associate", "fit": "moderate"},
+    ],
+}
+
 
 def confidence_for_level(level: int) -> float:
     return min(0.95, 0.25 + (level * 0.13))
@@ -42,7 +70,7 @@ def _fact_list(claim: EvidenceClaim) -> list[str]:
     if claim.source_platform:
         facts.append(f"Source: {claim.source_platform}")
     if claim.community_size:
-        facts.append(f"Community size: {claim.community_size}")
+        facts.append(f"Community size: {claim.community_size:,} members")
     if claim.start_date:
         window = claim.start_date.isoformat()
         if claim.end_date:
@@ -88,7 +116,7 @@ def build_resume_bullet(claim: EvidenceClaim) -> ResumeBullet:
     context = claim.organization or claim.source_platform or "a verified digital community"
     details = []
     if claim.community_size:
-        details.append(f"supporting a community of {claim.community_size}+ members")
+        details.append(f"supporting a community of {claim.community_size:,}+ members")
     if claim.outcomes:
         details.append(claim.outcomes.rstrip("."))
     if claim.responsibilities:
@@ -107,6 +135,20 @@ def career_summary(profile: Profile, cards: list[SkillCard]) -> str:
         return f"{name} is building an Omni-Skill Passport. Career signals will appear after evidence is verified."
     signals = ", ".join(card.signal_name for card in cards[:3])
     return f"{name} has verified evidence across {signals}. This summary is limited to approved evidence in the passport."
+
+
+def derive_career_tracks(evidence: list[EvidenceClaim]) -> list[dict[str, str]]:
+    seen_tracks: set[str] = set()
+    result: list[dict[str, str]] = []
+    for claim in evidence:
+        tracks = CAREER_TRACK_MAP.get(claim.kind, [])
+        for track in tracks:
+            if track["track"] not in seen_tracks:
+                seen_tracks.add(track["track"])
+                result.append(track)
+    # Strong-fit tracks first, then moderate
+    result.sort(key=lambda t: (0 if t["fit"] == "strong" else 1))
+    return result
 
 
 def passport_for_user(session: Session, user_id: int) -> dict:
@@ -135,6 +177,6 @@ def passport_for_user(session: Session, user_id: int) -> dict:
         "skill_cards": cards,
         "resume_bullets": bullets,
         "verification_breakdown": breakdown,
-        "career_summary": career_summary(profile, cards),
+        "career_summary": career_summary(profile, list(cards)),
+        "career_tracks": derive_career_tracks(list(evidence)),
     }
-
