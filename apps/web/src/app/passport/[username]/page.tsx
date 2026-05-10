@@ -3,19 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  BadgeCheck,
-  BookOpen,
-  Briefcase,
-  Check,
-  ChevronRight,
-  ClipboardCopy,
-  ExternalLink,
-  Gamepad2,
-  Map,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, BadgeCheck, Check, ChevronRight, ClipboardCopy } from "lucide-react";
 
 import { apiFetch } from "@/lib/api";
 import { CareerTrack, Passport } from "@/lib/types";
@@ -28,26 +16,43 @@ const verificationLevelLabel: Record<number, string> = {
   5: "Institution verified",
 };
 
+const ML = ({ children }: { children: React.ReactNode }) => (
+  <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--text-dim)", letterSpacing: "2px", textTransform: "uppercase" as const }}>
+    {children}
+  </span>
+);
+
 function CopyBullet({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   function copy() {
-    void navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    void navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   }
   return (
-    <div className="group flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[rgba(255,255,255,0.02)] p-3 hover:border-[var(--border-cyan)] transition-all">
-      <ChevronRight size={14} className="mt-0.5 shrink-0 text-[var(--cyan)]" />
-      <p className="flex-1 text-sm text-[var(--text-secondary)] leading-6">{text}</p>
-      <button
-        onClick={copy}
-        className="btn-ghost shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1.5"
-        title="Copy"
-        type="button"
-      >
-        {copied ? <Check size={14} className="text-green-400" /> : <ClipboardCopy size={14} />}
-      </button>
+    <div
+      onClick={copy}
+      style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "12px 14px", border: "1px solid var(--border)", cursor: "pointer", transition: "all 150ms ease" }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+    >
+      <ChevronRight size={13} style={{ marginTop: "3px", flexShrink: 0, color: "var(--accent)" }} />
+      <p style={{ flex: 1, fontSize: "15px", color: "var(--text)", lineHeight: 1.6 }}>{text}</p>
+      {copied
+        ? <Check size={13} style={{ flexShrink: 0, color: "var(--accent3)" }} />
+        : <ClipboardCopy size={13} style={{ flexShrink: 0, color: "var(--text-dim)" }} />
+      }
+    </div>
+  );
+}
+
+function SignalBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.round(value * 100);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <ML>{label}</ML>
+        <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "11px", color: "var(--accent)" }}>{pct}%</span>
+      </div>
+      <div className="signal-bar"><div className="signal-bar-fill" style={{ width: `${pct}%` }} /></div>
     </div>
   );
 }
@@ -57,55 +62,37 @@ function CareerTracks({ tracks }: { tracks: CareerTrack[] }) {
   const moderate = tracks.filter((t) => t.fit === "moderate");
   if (!tracks.length) return null;
   return (
-    <div className="panel space-y-4">
-      <div className="flex items-center gap-2">
-        <Map size={18} className="text-[var(--cyan)]" />
-        <h2 className="section-title">Career track suggestions</h2>
+    <div className="panel" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div>
+        <p className="eyebrow" style={{ marginBottom: "4px" }}>Career track suggestions</p>
+        <ML>Based on verified evidence patterns. Suggestions, not guarantees.</ML>
       </div>
-      <p className="text-xs text-[var(--text-muted)]">
-        Based on verified evidence patterns. These are informed suggestions, not guarantees.
-      </p>
       {strong.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-bold text-[var(--cyan)] uppercase tracking-widest">Strong fit</p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <ML>Strong fit</ML>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginTop: "8px" }}>
             {strong.map((t) => (
-              <div key={t.track} className="track-strong flex items-center gap-2">
-                <Briefcase size={13} className="text-[var(--cyan)] shrink-0" />
-                <span className="text-sm font-semibold text-white">{t.track}</span>
+              <div key={t.track} className="track-strong" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--accent)" }}>▶</span>
+                <span style={{ fontSize: "13px", color: "var(--text-bright)", fontFamily: "var(--font-body, sans-serif)", fontWeight: 600 }}>{t.track}</span>
               </div>
             ))}
           </div>
         </div>
       )}
       {moderate.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-bold text-purple-400 uppercase tracking-widest">Moderate fit</p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <ML>Moderate fit</ML>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginTop: "8px" }}>
             {moderate.map((t) => (
-              <div key={t.track} className="track-moderate flex items-center gap-2">
-                <BookOpen size={13} className="text-purple-400 shrink-0" />
-                <span className="text-sm font-semibold text-[var(--text-secondary)]">{t.track}</span>
+              <div key={t.track} className="track-moderate" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--accent3)" }}>▷</span>
+                <span style={{ fontSize: "13px", color: "var(--text)", fontFamily: "var(--font-body, sans-serif)" }}>{t.track}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function SignalBar({ value, label }: { value: number; label: string }) {
-  const pct = Math.round(value * 100);
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-xs">
-        <span className="text-[var(--text-secondary)]">{label}</span>
-        <span className="font-bold text-[var(--cyan)]">{pct}%</span>
-      </div>
-      <div className="signal-bar">
-        <div className="signal-bar-fill" style={{ width: `${pct}%` }} />
-      </div>
     </div>
   );
 }
@@ -113,37 +100,29 @@ function SignalBar({ value, label }: { value: number; label: string }) {
 export default function PublicPassportPage() {
   const params = useParams<{ username: string }>();
   const [passport, setPassport] = useState<Passport | null>(null);
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     async function load() {
-      try {
-        setPassport(await apiFetch<Passport>(`/passport/public/${params.username}`));
-      } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Passport not found");
-      }
+      try { setPassport(await apiFetch<Passport>(`/passport/public/${params.username}`)); }
+      catch (e) { setError(e instanceof Error ? e.message : "Passport not found"); }
     }
     if (params.username) void load();
   }, [params.username]);
 
   function copyLink() {
-    void navigator.clipboard.writeText(window.location.href).then(() => {
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2500);
-    });
+    void navigator.clipboard.writeText(window.location.href).then(() => { setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2500); });
   }
 
-  if (message) {
+  if (error) {
     return (
-      <main className="app-bg flex min-h-screen items-center justify-center px-4">
-        <div className="panel panel-glow max-w-md text-center space-y-4">
-          <Gamepad2 size={32} className="text-[var(--text-muted)] mx-auto" />
+      <main className="app-bg" style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: "40px" }}>
+        <div className="panel panel-accent" style={{ maxWidth: "440px", textAlign: "center", display: "flex", flexDirection: "column", gap: "16px", alignItems: "center" }}>
+          <p style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "11px", color: "var(--accent2)", letterSpacing: "3px", textTransform: "uppercase" }}>// Passport not found</p>
           <h1 className="section-title">Passport unavailable</h1>
-          <p className="text-sm text-[var(--text-secondary)]">{message}</p>
-          <Link className="btn-secondary inline-flex" href="/">
-            <ArrowLeft size={16} /> Omni-Skill
-          </Link>
+          <p style={{ color: "var(--text-dim)", fontSize: "15px" }}>{error}</p>
+          <Link href="/" className="btn-secondary"><ArrowLeft size={13} /> Omni-Skill</Link>
         </div>
       </main>
     );
@@ -151,11 +130,8 @@ export default function PublicPassportPage() {
 
   if (!passport) {
     return (
-      <main className="app-bg flex min-h-screen items-center justify-center">
-        <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
-          <Gamepad2 size={20} className="text-[var(--cyan)] animate-pulse" />
-          Loading passport...
-        </div>
+      <main className="app-bg" style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "13px", color: "var(--accent)", letterSpacing: "3px", textTransform: "uppercase" }}>// Loading passport...</p>
       </main>
     );
   }
@@ -165,100 +141,84 @@ export default function PublicPassportPage() {
 
   return (
     <main className="app-bg min-h-screen">
-      {/* Nav */}
-      <nav className="border-b border-[var(--border)] bg-[rgba(8,11,20,0.85)] backdrop-blur-sm sticky top-0 z-10">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 lg:px-8">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <ArrowLeft size={16} className="text-[var(--text-muted)]" />
-            <Gamepad2 size={16} className="text-[var(--cyan)]" />
-            <span className="text-xs font-black logo-glow">OMNI-SKILL</span>
-          </Link>
-          <button
-            onClick={copyLink}
-            className="btn-secondary text-xs"
-            type="button"
-          >
-            {linkCopied ? (
-              <><Check size={13} className="text-green-400" /> Link copied!</>
-            ) : (
-              <><ClipboardCopy size={13} /> Share passport</>
-            )}
-          </button>
-        </div>
+
+      {/* ─── NAV ─── */}
+      <nav style={{ position: "sticky", top: 0, zIndex: 10, background: "rgba(5,10,15,0.95)", borderBottom: "1px solid var(--border)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 40px", height: "56px" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", opacity: 0.8 }}>
+          <ArrowLeft size={14} style={{ color: "var(--text-dim)" }} />
+          <span className="logo-text" style={{ fontSize: "15px" }}>OMNI<span className="logo-dash">-</span>SKILL</span>
+        </Link>
+        <button type="button" onClick={copyLink} className="btn-secondary" style={{ fontSize: "11px" }}>
+          {linkCopied ? <><Check size={13} style={{ color: "var(--accent3)" }} /> Copied!</> : <><ClipboardCopy size={13} /> Share passport</>}
+        </button>
       </nav>
 
-      {/* Profile header */}
-      <section className="border-b border-[var(--border)] bg-[rgba(13,18,37,0.6)] backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl px-4 py-10 lg:px-8">
-          <div className="grid gap-6 md:grid-cols-[1fr_260px] md:items-start">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="chip chip-cyan text-[10px]">Verified career evidence</span>
-              </div>
-              <h1 className="text-4xl font-black tracking-tight text-white">{displayName}</h1>
-              <p className="text-lg text-[var(--text-secondary)]">
-                {passport.profile.headline || passport.profile.role_identity}
+      {/* ─── PROFILE HEADER ─── */}
+      <section style={{ borderBottom: "1px solid var(--border)", background: "rgba(8,15,24,0.7)", padding: "60px 40px" }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 280px", gap: "40px", alignItems: "start" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <span className="chip">Verified career evidence</span>
+            <h1 style={{ fontFamily: "var(--font-head, Barlow Condensed, sans-serif)", fontSize: "clamp(48px, 6vw, 80px)", fontWeight: 900, fontStyle: "italic", textTransform: "uppercase", letterSpacing: "-1px", color: "var(--text-bright)", lineHeight: 0.9 }}>
+              {displayName}
+            </h1>
+            <p style={{ fontFamily: "var(--font-body, Rajdhani, sans-serif)", fontSize: "20px", color: "var(--text-dim)", letterSpacing: "1px" }}>
+              {passport.profile.headline || passport.profile.role_identity}
+            </p>
+            {passport.profile.college && (
+              <ML>
+                {passport.profile.college}{passport.profile.graduation_year ? ` · Class of ${passport.profile.graduation_year}` : ""}
+              </ML>
+            )}
+            {passport.career_summary && (
+              <p style={{ fontSize: "16px", color: "var(--text)", lineHeight: 1.7, maxWidth: "640px", borderLeft: "2px solid var(--accent)", paddingLeft: "16px", marginTop: "4px" }}>
+                {passport.career_summary}
               </p>
-              {passport.profile.college && (
-                <p className="text-sm text-[var(--text-muted)]">
-                  {passport.profile.college}
-                  {passport.profile.graduation_year ? ` · Class of ${passport.profile.graduation_year}` : ""}
-                </p>
-              )}
-              {passport.career_summary && (
-                <p className="text-sm text-[var(--text-secondary)] leading-7 max-w-2xl border-l-2 border-[var(--border-cyan)] pl-4">
-                  {passport.career_summary}
-                </p>
-              )}
-            </div>
+            )}
+          </div>
 
-            {/* Verification breakdown card */}
-            <div className="panel space-y-4">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-[var(--cyan)]" />
-                <h2 className="text-sm font-bold text-white">Verification breakdown</h2>
-              </div>
-              {Object.entries(passport.verification_breakdown).length ? (
-                <div className="space-y-2">
-                  {Object.entries(passport.verification_breakdown).map(([label, count]) => (
-                    <div key={label} className="flex items-center justify-between text-xs">
-                      <span className="text-[var(--text-secondary)] capitalize">
-                        {label.replace(/_/g, " ")}
-                      </span>
-                      <span className="font-bold text-white bg-[rgba(0,212,255,0.1)] border border-[var(--border-cyan)] rounded-full px-2 py-0.5 text-[var(--cyan)]">
-                        {count}
-                      </span>
-                    </div>
-                  ))}
+          {/* Verification card */}
+          <div className="panel panel-accent" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ height: "2px", background: "linear-gradient(90deg, transparent, var(--accent), transparent)", marginBottom: "4px" }} />
+            <p className="eyebrow">Verification breakdown</p>
+            {Object.entries(passport.verification_breakdown).length ? (
+              <>
+                {Object.entries(passport.verification_breakdown).map(([label, count]) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <ML>{label.replace(/_/g, " ")}</ML>
+                    <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "14px", color: "var(--accent)", fontWeight: 700 }}>{count}</span>
+                  </div>
+                ))}
+                <div className="divider" />
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <ML>Total verified</ML>
+                  <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "18px", color: "var(--accent3)", fontWeight: 700 }}>
+                    {Object.values(passport.verification_breakdown).reduce((a, b) => a + b, 0)}
+                  </span>
                 </div>
-              ) : (
-                <p className="text-xs text-[var(--text-muted)]">No approved evidence yet.</p>
-              )}
-              <div className="divider" />
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[var(--text-muted)]">Total verified</span>
-                <span className="font-black text-[var(--cyan)]">
-                  {Object.values(passport.verification_breakdown).reduce((a, b) => a + b, 0)}
-                </span>
-              </div>
-            </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
+                  <span className="tag tag-cyan">Consistency</span>
+                  <span className="tag tag-green">Community Ops</span>
+                  <span className="tag tag-orange">Competitive</span>
+                </div>
+              </>
+            ) : (
+              <ML>No approved evidence yet.</ML>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Main content */}
-      <section className="mx-auto max-w-5xl px-4 py-8 lg:px-8 space-y-6">
-        {/* Signal strength */}
+      <div className="glow-line" />
+
+      {/* ─── MAIN CONTENT ─── */}
+      <section style={{ maxWidth: "1100px", margin: "0 auto", padding: "40px 40px 80px", display: "flex", flexDirection: "column", gap: "24px" }}>
+
+        {/* Signals */}
         {passport.skill_cards.length > 0 && (
-          <div className="panel space-y-4">
-            <div className="flex items-center gap-2">
-              <ExternalLink size={16} className="text-[var(--cyan)]" />
-              <h2 className="section-title">Signal strength</h2>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {passport.skill_cards.map((card) => (
-                <SignalBar key={card.id} label={card.signal_name} value={card.confidence} />
-              ))}
+          <div className="panel" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <p className="eyebrow">04 // Signal strength</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              {passport.skill_cards.map((c) => <SignalBar key={c.id} label={c.signal_name} value={c.confidence} />)}
             </div>
           </div>
         )}
@@ -267,77 +227,65 @@ export default function PublicPassportPage() {
         {hasTracks && <CareerTracks tracks={passport.career_tracks} />}
 
         {/* Evidence cards */}
-        <div className="panel space-y-4">
-          <div className="flex items-center gap-2">
-            <BadgeCheck size={18} className="text-[var(--cyan)]" />
-            <h2 className="section-title">Evidence cards</h2>
-          </div>
+        <div className="panel" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <p className="eyebrow">05 // Evidence cards</p>
           {passport.skill_cards.length ? (
-            <div className="grid gap-3 md:grid-cols-2">
-              {passport.skill_cards.map((card) => (
-                <article
-                  key={card.id}
-                  className="rounded-xl border border-[var(--border)] bg-[rgba(255,255,255,0.02)] p-4 hover:border-[var(--border-cyan)] transition-all"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <h3 className="font-bold text-white">{card.signal_name}</h3>
-                    <span className="chip">
-                      <BadgeCheck size={11} />
-                      {verificationLevelLabel[card.verification_level] || `Level ${card.verification_level}`}
-                    </span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", background: "var(--border)" }}>
+              {passport.skill_cards.map((c) => (
+                <div key={c.id} className="panel" style={{ position: "relative", overflow: "hidden" }}>
+                  <div style={{ height: "2px", background: "linear-gradient(90deg, var(--accent), var(--accent3))", marginBottom: "12px" }} />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "10px" }}>
+                    <p style={{ fontFamily: "var(--font-head, Barlow Condensed, sans-serif)", fontSize: "18px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", color: "var(--text-bright)" }}>{c.signal_name}</p>
+                    <span className="chip">{verificationLevelLabel[c.verification_level] || `Lv ${c.verification_level}`}</span>
                   </div>
-                  <p className="text-sm text-[var(--text-secondary)] leading-6">{card.career_translation}</p>
-                  {card.limitations && (
-                    <p className="mt-3 text-xs text-[var(--text-muted)] italic">{card.limitations}</p>
+                  <p style={{ fontSize: "14px", color: "var(--text)", lineHeight: 1.6 }}>{c.career_translation}</p>
+                  {c.limitations && (
+                    <p style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--accent2)", marginTop: "10px", letterSpacing: "0.5px" }}>⚠ {c.limitations}</p>
                   )}
-                  {card.supporting_facts.length > 0 && (
-                    <div className="mt-3 space-y-1 pt-3 border-t border-[var(--border)]">
-                      {card.supporting_facts.map((fact, i) => (
-                        <p key={i} className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-[var(--cyan)] inline-block shrink-0" />
-                          {fact}
+                  {c.supporting_facts.length > 0 && (
+                    <div style={{ marginTop: "12px", borderTop: "1px solid var(--border)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                      {c.supporting_facts.map((f, i) => (
+                        <p key={i} style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--text-dim)", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ color: "var(--accent)", display: "inline-block", width: "4px", height: "4px", background: "var(--accent)", borderRadius: "50%", flexShrink: 0 }} />
+                          {f}
                         </p>
                       ))}
                     </div>
                   )}
-                </article>
+                </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">No approved evidence cards yet.</p>
+            <ML>No approved evidence cards yet.</ML>
           )}
         </div>
 
         {/* Resume bullets */}
-        <div className="panel space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Briefcase size={18} className="text-[var(--cyan)]" />
-              <h2 className="section-title">Resume bullets</h2>
-            </div>
-            <span className="text-xs text-[var(--text-muted)]">Hover to copy</span>
+        <div className="panel" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p className="eyebrow">06 // Resume bullets</p>
+            <ML>Click to copy</ML>
           </div>
           {passport.resume_bullets.length ? (
-            <div className="space-y-2">
-              {passport.resume_bullets.map((bullet) => (
-                <CopyBullet key={bullet.id} text={bullet.bullet} />
-              ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px", background: "var(--border)" }}>
+              {passport.resume_bullets.map((b) => <CopyBullet key={b.id} text={b.bullet} />)}
             </div>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">Resume bullets appear after evidence is approved.</p>
+            <ML>// Resume bullets appear after evidence is approved.</ML>
           )}
         </div>
 
         {/* Footer CTA */}
-        <div className="panel panel-glow text-center space-y-3 py-8">
-          <Gamepad2 size={28} className="text-[var(--cyan)] mx-auto" />
-          <h3 className="font-bold text-white">Build your own Omni-Skill Passport</h3>
-          <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
+        <div className="panel panel-accent" style={{ textAlign: "center", padding: "48px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+          <div style={{ height: "2px", background: "linear-gradient(90deg, transparent, var(--accent), transparent)", width: "100%", marginBottom: "8px" }} />
+          <p className="eyebrow">Build your own</p>
+          <h3 style={{ fontFamily: "var(--font-head, Barlow Condensed, sans-serif)", fontSize: "32px", fontWeight: 900, fontStyle: "italic", textTransform: "uppercase", color: "var(--text-bright)" }}>
+            Get your Omni-Skill Passport
+          </h3>
+          <p style={{ color: "var(--text-dim)", fontSize: "16px", maxWidth: "480px" }}>
             Turn your gaming, esports, and community experience into verified career evidence.
           </p>
-          <Link href="/" className="btn-primary inline-flex">
-            Start your passport
-          </Link>
+          <Link href="/" className="btn-primary">Start your passport →</Link>
         </div>
       </section>
     </main>

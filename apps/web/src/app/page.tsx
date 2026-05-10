@@ -2,23 +2,13 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  BadgeCheck,
-  FileText,
-  Gamepad2,
-  ShieldCheck,
-  Sparkles,
-  Trophy,
-  Users,
-  Zap,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { apiFetch } from "@/lib/api";
 import { AuthResponse } from "@/lib/types";
 
-const signalPreview = [
+const signalData = [
   { month: "Jan", consistency: 2, operations: 1 },
   { month: "Feb", consistency: 4, operations: 2 },
   { month: "Mar", consistency: 5, operations: 3 },
@@ -26,37 +16,35 @@ const signalPreview = [
   { month: "May", consistency: 9, operations: 6 },
 ];
 
-const features = [
+const layers = [
   {
-    icon: BadgeCheck,
-    color: "text-cyan-400",
-    bg: "bg-cyan-400",
-    title: "5 Verification Levels",
-    desc: "Self-reported up to institution-verified. Every claim shows its evidence source and confidence.",
+    name: "Platform Data Pipeline",
+    desc: "Pulls data from supported game/esports/community platforms",
+    example: "FACEIT match history, Steam achievements, Riot match/ranked data, Discord guild evidence",
   },
   {
-    icon: FileText,
-    color: "text-purple-400",
-    bg: "bg-purple-400",
-    title: "Passport Outputs",
-    desc: "Evidence cards, public profile, copy-ready resume bullets, and PDF export for applications.",
+    name: "Community Evidence Pipeline",
+    desc: "Captures online community and event operations evidence",
+    example: "Discord moderator role, club leadership, event organization, tournament participation",
   },
   {
-    icon: Sparkles,
-    color: "text-green-400",
-    bg: "bg-green-400",
-    title: "Honest AI Layer",
-    desc: "AI polishes wording from verified facts only. Unsupported claims stay out.",
+    name: "Skill Signal Engine",
+    desc: "Calculates observable signals from normalized data",
+    example: "Consistency, improvement, role stability, competitive engagement, community ops",
+  },
+  {
+    name: "Verification Layer",
+    desc: "Assigns trust level and keeps audit history",
+    example: "Level 3 platform-verified; Level 5 institution-verified",
+  },
+  {
+    name: "Passport Generator",
+    desc: "Creates the final shareable career artifact",
+    example: "Public profile, evidence cards, resume bullets, PDF export",
   },
 ];
 
-const evidenceTypes = [
-  { icon: Users, label: "Discord Admin", desc: "Community ops & moderation" },
-  { icon: Trophy, label: "Esports Player", desc: "Competitive participation" },
-  { icon: Zap, label: "Tournament Organizer", desc: "Event planning & delivery" },
-  { icon: Gamepad2, label: "Club Member", desc: "Campus esports societies" },
-  { icon: ShieldCheck, label: "Guild Leader", desc: "Digital team coordination" },
-];
+const badges = ["Career Evidence Platform", "Esports · Discord · FACEIT", "India-First Launch", "MVP 2026"];
 
 export default function Home() {
   const router = useRouter();
@@ -73,248 +61,334 @@ export default function Home() {
     if (saved) router.push("/dashboard");
   }, [router]);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setMessage("");
     try {
-      const response = await apiFetch<AuthResponse>(
+      const res = await apiFetch<AuthResponse>(
         mode === "register" ? "/auth/register" : "/auth/login",
         {
           method: "POST",
-          body:
-            mode === "register"
-              ? { email, password, admin_invite_code: adminCode }
-              : { email, password },
+          body: mode === "register"
+            ? { email, password, admin_invite_code: adminCode }
+            : { email, password },
         },
       );
-      window.localStorage.setItem("omniskill_token", response.access_token);
+      window.localStorage.setItem("omniskill_token", res.access_token);
       router.push("/dashboard");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not continue");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not continue");
     }
   }
 
   return (
     <main className="app-bg min-h-screen">
-      {/* Nav */}
-      <nav className="border-b border-[rgba(255,255,255,0.06)] bg-[rgba(8,11,20,0.8)] backdrop-blur-sm sticky top-0 z-20">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
-          <div className="flex items-center gap-2">
-            <Gamepad2 size={20} className="text-[var(--cyan)]" />
-            <span className="text-sm font-black tracking-tight logo-glow">OMNI-SKILL</span>
-          </div>
-          <span className="text-xs font-semibold text-[var(--text-muted)] border border-[var(--border)] rounded-full px-3 py-1">
-            Early Access
-          </span>
+
+      {/* ─── NAV ─── */}
+      <nav
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 40px",
+          height: "60px",
+          background: "rgba(5,10,15,0.92)",
+          borderBottom: "1px solid #1a2d42",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        <div className="logo-text" style={{ fontSize: "20px" }}>
+          OMNI<span className="logo-dash">-</span>SKILL
         </div>
+        <div style={{ display: "flex", gap: "4px" }}>
+          {["Problem", "Signals", "Trust", "Stack"].map((label) => (
+            <span
+              key={label}
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: "11px",
+                color: "var(--text-dim)",
+                padding: "6px 14px",
+                letterSpacing: "2px",
+                textTransform: "uppercase",
+                cursor: "default",
+              }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+        <span className="chip">Early Access</span>
       </nav>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-8 lg:py-16">
-        {/* Left: Hero */}
-        <div className="space-y-8">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--border-cyan)] bg-[var(--cyan-dim)] px-3 py-1.5 text-xs font-bold text-[var(--cyan)] uppercase tracking-widest">
-              <Zap size={12} /> Career evidence platform
-            </div>
-            <h1 className="text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Your gaming history{" "}
-              <span className="gradient-text">is career proof.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-[var(--text-secondary)]">
-              Omni-Skill turns Discord moderation, esports competition, tournament organization, and guild leadership into verified evidence cards, resume bullets, and a shareable professional passport.
-            </p>
-          </div>
+      {/* ─── HERO ─── */}
+      <section
+        className="hero-bg"
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          textAlign: "center",
+          padding: "80px 40px 60px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div className="grid-overlay" />
 
-          {/* Feature cards */}
-          <div className="grid gap-3 sm:grid-cols-3">
-            {features.map((f) => (
-              <div key={f.title} className="panel panel-glow space-y-2">
-                <div className={`inline-flex rounded-lg p-2 bg-opacity-10 ${f.color} bg-current`}>
-                  <f.icon size={18} className={f.color} />
-                </div>
-                <p className="text-sm font-bold text-white">{f.title}</p>
-                <p className="text-xs text-[var(--text-secondary)] leading-5">{f.desc}</p>
-              </div>
-            ))}
-          </div>
+        {/* Orb */}
+        <div
+          style={{
+            position: "absolute",
+            width: "600px",
+            height: "600px",
+            background: "radial-gradient(ellipse, rgba(0,229,255,0.06) 0%, transparent 70%)",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%,-50%)",
+            borderRadius: "50%",
+            animation: "orb-pulse 4s ease-in-out infinite",
+            pointerEvents: "none",
+          }}
+        />
 
-          {/* Evidence types */}
-          <div className="panel space-y-4">
+        {/* Tag */}
+        <p
+          className="eyebrow"
+          style={{
+            marginBottom: "20px",
+            animation: "fade-up 0.6s 0.2s both",
+          }}
+        >
+          Career Evidence Platform · 09 May 2026
+        </p>
+
+        {/* Big title */}
+        <h1
+          className="hero-title"
+          style={{
+            fontSize: "clamp(72px, 12vw, 140px)",
+            animation: "fade-up 0.7s 0.3s both",
+          }}
+        >
+          <span style={{ display: "block" }}>OMNI</span>
+          <span className="text-outline" style={{ display: "block" }}>SKILL</span>
+        </h1>
+
+        <p
+          style={{
+            fontFamily: "var(--font-body, Rajdhani, sans-serif)",
+            fontSize: "18px",
+            fontWeight: 500,
+            color: "var(--text-dim)",
+            maxWidth: "680px",
+            marginTop: "28px",
+            letterSpacing: "1px",
+            lineHeight: 1.7,
+            animation: "fade-up 0.7s 0.5s both",
+          }}
+        >
+          A{" "}
+          <span style={{ color: "var(--accent)" }}>data-backed career evidence platform</span>{" "}
+          that connects to gaming, esports, and digital community platforms — analyzes verified digital activity — and converts it into{" "}
+          <span style={{ color: "var(--accent)" }}>explainable career-ready proof</span>.
+        </p>
+
+        {/* Badges */}
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            marginTop: "36px",
+            animation: "fade-up 0.7s 0.7s both",
+          }}
+        >
+          {badges.map((b) => (
+            <span
+              key={b}
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: "10px",
+                letterSpacing: "2px",
+                color: "var(--accent3)",
+                border: "1px solid rgba(127,255,0,0.3)",
+                padding: "6px 16px",
+                textTransform: "uppercase",
+                background: "rgba(127,255,0,0.04)",
+                clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",
+              }}
+            >
+              {b}
+            </span>
+          ))}
+        </div>
+
+        {/* Scroll hint */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "30px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "8px",
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: "10px",
+            color: "var(--text-dim)",
+            letterSpacing: "2px",
+          }}
+        >
+          SCROLL
+          <span style={{ width: "1px", height: "40px", background: "linear-gradient(to bottom, var(--accent), transparent)", display: "block" }} />
+        </div>
+      </section>
+
+      <div className="glow-line" />
+
+      {/* ─── TWO-COLUMN: signal chart + auth form ─── */}
+      <section style={{ padding: "80px 40px" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "start" }}>
+
+          {/* Left: Signal chart */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             <div>
-              <p className="eyebrow">Supported evidence types</p>
-              <h2 className="section-title mt-1">What you can prove</h2>
+              <p className="eyebrow" style={{ marginBottom: "8px" }}>01 // Sample signal growth</p>
+              <h2 className="section-title">Signals grow only when<br />evidence supports them</h2>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-              {evidenceTypes.map((t) => (
-                <div
-                  key={t.label}
-                  className="flex flex-col items-center gap-2 rounded-lg border border-[var(--border)] bg-[rgba(255,255,255,0.02)] p-3 text-center"
-                >
-                  <t.icon size={20} className="text-[var(--cyan)]" />
-                  <span className="text-xs font-bold text-white leading-tight">{t.label}</span>
-                  <span className="text-[10px] text-[var(--text-muted)] leading-tight">{t.desc}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Signal preview chart */}
-          <div className="panel space-y-3">
-            <div>
-              <p className="eyebrow">Sample signal growth</p>
-              <h2 className="section-title mt-1">Signals grow only when evidence supports them</h2>
-            </div>
-            <div className="h-48">
-              {chartsReady ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={180}>
-                  <AreaChart data={signalPreview}>
+            <div className="panel" style={{ height: "240px" }}>
+              {chartsReady && (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+                  <AreaChart data={signalData}>
                     <defs>
                       <linearGradient id="gCyan" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#00d4ff" stopOpacity={0.02} />
+                        <stop offset="5%" stopColor="#00e5ff" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#00e5ff" stopOpacity={0.01} />
                       </linearGradient>
-                      <linearGradient id="gPurple" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.02} />
+                      <linearGradient id="gGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#7fff00" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#7fff00" stopOpacity={0.01} />
                       </linearGradient>
                     </defs>
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 11, fill: "#475569" }}
-                      axisLine={{ stroke: "rgba(255,255,255,0.07)" }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "#475569" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "#0d1225",
-                        border: "1px solid rgba(0,212,255,0.28)",
-                        borderRadius: "8px",
-                        color: "#e2e8f0",
-                        fontSize: "12px",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="consistency"
-                      stroke="#00d4ff"
-                      strokeWidth={2}
-                      fill="url(#gCyan)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="operations"
-                      stroke="#7c3aed"
-                      strokeWidth={2}
-                      fill="url(#gPurple)"
-                    />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#4a6a80", fontFamily: "var(--font-mono, monospace)" }} axisLine={{ stroke: "#1a2d42" }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: "#4a6a80", fontFamily: "var(--font-mono, monospace)" }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: "#0b1622", border: "1px solid #00e5ff", borderRadius: 0, color: "#e8f4ff", fontSize: "12px", fontFamily: "var(--font-mono, monospace)" }} />
+                    <Area type="monotone" dataKey="consistency" stroke="#00e5ff" strokeWidth={2} fill="url(#gCyan)" />
+                    <Area type="monotone" dataKey="operations" stroke="#7fff00" strokeWidth={2} fill="url(#gGreen)" />
                   </AreaChart>
                 </ResponsiveContainer>
-              ) : null}
+              )}
             </div>
-            <div className="flex gap-4 text-xs text-[var(--text-muted)]">
-              <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-0.5 bg-[var(--cyan)] rounded" /> Consistency</span>
-              <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-0.5 bg-purple-500 rounded" /> Operations</span>
+            <div style={{ display: "flex", gap: "16px" }}>
+              <span className="tag tag-cyan">Consistency</span>
+              <span className="tag tag-green">Community Ops</span>
             </div>
-          </div>
-        </div>
 
-        {/* Right: Auth form */}
-        <div className="panel panel-glow mx-auto w-full max-w-md">
-          <div className="flex rounded-lg border border-[var(--border)] bg-[rgba(255,255,255,0.03)] p-1 mb-6">
-            <button
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-bold transition-all ${
-                mode === "register"
-                  ? "bg-[var(--cyan-dim)] border border-[var(--border-cyan)] text-[var(--cyan)]"
-                  : "text-[var(--text-muted)]"
-              }`}
-              type="button"
-              onClick={() => setMode("register")}
-            >
-              Create account
-            </button>
-            <button
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-bold transition-all ${
-                mode === "login"
-                  ? "bg-[var(--cyan-dim)] border border-[var(--border-cyan)] text-[var(--cyan)]"
-                  : "text-[var(--text-muted)]"
-              }`}
-              type="button"
-              onClick={() => setMode("login")}
-            >
-              Sign in
-            </button>
-          </div>
-
-          <form className="space-y-4" onSubmit={submit}>
+            {/* Product layers compact table */}
             <div>
-              <p className="eyebrow">{mode === "register" ? "Start your passport" : "Continue"}</p>
-              <h2 className="section-title mt-1">
-                {mode === "register" ? "Create your account" : "Open your workspace"}
-              </h2>
+              <p className="eyebrow" style={{ marginBottom: "12px" }}>02 // What the platform does</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", background: "var(--border)" }}>
+                {layers.map((l) => (
+                  <div key={l.name} className="panel" style={{ padding: "16px 20px", display: "flex", gap: "16px" }}>
+                    <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "11px", color: "var(--accent3)", whiteSpace: "nowrap", letterSpacing: "1px", minWidth: "180px", flexShrink: 0 }}>
+                      {l.name}
+                    </span>
+                    <span style={{ fontSize: "14px", color: "var(--text-dim)" }}>{l.example}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <label className="label">
-              Email address
-              <input
-                className="input"
-                inputMode="email"
-                placeholder="you@university.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </label>
-            <label className="label">
-              Password
-              <input
-                className="input"
-                type="password"
-                minLength={8}
-                placeholder="8+ characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-            {mode === "register" ? (
-              <label className="label">
-                Admin code
-                <input
-                  className="input"
-                  placeholder="Leave blank for standard account"
-                  value={adminCode}
-                  onChange={(e) => setAdminCode(e.target.value)}
-                />
-              </label>
-            ) : null}
-            {message ? <div className="notice notice-error">{message}</div> : null}
-            <button className="btn-primary w-full" type="submit">
-              {mode === "register" ? "Build my passport" : "Sign in"}
-              <ArrowRight size={16} />
-            </button>
-            <p className="text-center text-xs text-[var(--text-muted)]">
-              No recruiter marketplace. Evidence-first. Privacy-respecting.
-            </p>
-          </form>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-[var(--border)] mt-12">
-        <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Gamepad2 size={16} className="text-[var(--cyan)]" />
-            <span className="text-xs font-black logo-glow">OMNI-SKILL</span>
-            <span className="text-xs text-[var(--text-muted)]">Career Graph · Early Access</span>
           </div>
-          <p className="text-xs text-[var(--text-muted)]">
-            Verified digital activity → Professional proof. No fake science.
-          </p>
+
+          {/* Right: Auth form */}
+          <div className="panel panel-accent" style={{ position: "sticky", top: "80px" }}>
+            {/* Top bar with accent line */}
+            <div style={{ height: "2px", background: "linear-gradient(90deg, transparent, var(--accent), transparent)", marginBottom: "24px" }} />
+
+            {/* Mode toggle */}
+            <div style={{ display: "flex", gap: "2px", background: "var(--border)", padding: "2px", marginBottom: "24px" }}>
+              {(["register", "login"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    fontFamily: "var(--font-mono, monospace)",
+                    fontSize: "11px",
+                    letterSpacing: "2px",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    background: mode === m ? "var(--accent)" : "transparent",
+                    color: mode === m ? "var(--bg)" : "var(--text-dim)",
+                    border: "none",
+                    transition: "all 150ms ease",
+                  }}
+                >
+                  {m === "register" ? "Create Account" : "Sign In"}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <p className="eyebrow" style={{ marginBottom: "6px" }}>
+                  {mode === "register" ? "Start passport" : "Continue"}
+                </p>
+                <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
+                  {mode === "register" ? "Create your account" : "Open workspace"}
+                </h2>
+              </div>
+
+              <label className="label">
+                Email address
+                <input className="input" inputMode="email" placeholder="you@university.edu" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </label>
+
+              <label className="label">
+                Password
+                <input className="input" type="password" minLength={8} placeholder="8+ characters" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </label>
+
+              {mode === "register" && (
+                <label className="label">
+                  Admin code
+                  <input className="input" placeholder="Leave blank for standard account" value={adminCode} onChange={(e) => setAdminCode(e.target.value)} />
+                </label>
+              )}
+
+              {message && <div className="notice notice-error">{message}</div>}
+
+              <button className="btn-primary" type="submit" style={{ width: "100%", gap: "8px" }}>
+                {mode === "register" ? "Build my passport" : "Sign in"}
+                <ArrowRight size={15} />
+              </button>
+
+              <p style={{ textAlign: "center", fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--text-dim)", letterSpacing: "1px" }}>
+                No recruiter marketplace · Evidence-first · Privacy-respecting
+              </p>
+            </form>
+          </div>
         </div>
+      </section>
+
+      {/* ─── FOOTER ─── */}
+      <footer style={{ background: "var(--bg)", borderTop: "1px solid var(--border)", padding: "28px 40px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="logo-text" style={{ fontSize: "14px", opacity: 0.6 }}>
+          OMNI<span className="logo-dash">-</span>SKILL // Career Graph
+        </div>
+        <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "10px", color: "var(--text-dim)", letterSpacing: "2px", textTransform: "uppercase" }}>
+          Document Date: 09 May 2026 · India-First Launch · MVP Architecture
+        </span>
       </footer>
     </main>
   );
